@@ -42,6 +42,9 @@ input,select,textarea{font:inherit;color:inherit}
 .sdot.ok{background:#2fb36b}.sdot.err{background:#e0584f}.sdot.run{background:#e0a72f;animation:pl 1s infinite}
 @keyframes pl{50%{opacity:.3}}
 #main{flex:1;overflow-y:auto;padding:4px 12px 110px;-webkit-overflow-scrolling:touch}
+.card,.fchip,.frow{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.fchip.dt-b{box-shadow:-6px 0 0 var(--primary),0 6px 18px rgba(0,0,0,.22)}.fchip.dt-a{box-shadow:6px 0 0 var(--primary),0 6px 18px rgba(0,0,0,.22)}
+.card.dt-b,.frow.dt-b{box-shadow:0 -6px 0 var(--primary)}.card.dt-a,.frow.dt-a{box-shadow:0 6px 0 var(--primary)}
 .fchips{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:none}
 .fchips::-webkit-scrollbar{display:none}
 .fchips{align-items:stretch;padding:4px 4px 16px}
@@ -255,7 +258,9 @@ function newFolder(name){const f={id:uid(),name,color:folders.filter(x=>!x.delet
 const countIn=id=>notes.filter(n=>!n.deleted&&n.state==='active'&&n.folderId===id).length;
 
 /* ============ Çizim ============ */
-function sortList(l){const k=S.sort;return l.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(k==='title'?(a.title||'').localeCompare(b.title||'','tr'):k==='created'?b.created-a.created:b.updated-a.updated))}
+const ord=x=>x.order==null?-1e15:x.order;
+const folderSort=(a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||((a.order==null?1e9:a.order)-(b.order==null?1e9:b.order))||a.name.localeCompare(b.name,'tr');
+function sortList(l){const k=S.sort;return l.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(k==='manual'?(ord(a)-ord(b))||b.updated-a.updated:k==='title'?(a.title||'').localeCompare(b.title||'','tr'):k==='created'?b.created-a.created:b.updated-a.updated))}
 function visibleNotes(){let l=notes.filter(n=>!n.deleted);
  if(q){const t=q.toLocaleLowerCase('tr');l=l.filter(n=>n.state!=='trash'&&((n.title||'')+' '+n.body).toLocaleLowerCase('tr').includes(t))}
  else if(view.scope==='archive')l=l.filter(n=>n.state==='archive');
@@ -270,7 +275,7 @@ function renderMain(){const m=$('#main');let h='';const searching=!!q;
   const nf=files.filter(x=>!x.deleted&&x.folderId===f.id).length;
   h+=`<div class="fhead"><div class="fdot" style="background:${fcol(f)}"></div><h2>${esc(f.name)}</h2><button class="icb" data-act="fmenu">${ic('more')}</button></div><div class="tabs"><button class="${view.tab==='notes'?'on':''}" data-act="tab" data-v="notes">Notlar (${countIn(f.id)})</button><button class="${view.tab==='files'?'on':''}" data-act="tab" data-v="files">Dosyalar (${nf})</button></div>`;
   if(view.tab==='files'){m.innerHTML=h+renderFiles(f);return}}
- else if(view.scope==='all'){h+=backupBanner();const fs=folders.filter(f=>!f.deleted).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||a.name.localeCompare(b.name,'tr'));
+ else if(view.scope==='all'){h+=backupBanner();const fs=folders.filter(f=>!f.deleted).sort(folderSort);
   h+=`<div class="fchips">${fs.map(f=>`<button class="fchip" data-act="folder" data-id="${f.id}" style="${chipStyle(f)}">${f.pinned?`<span class="pn">${ic('pin',13)}</span>`:''}<span>${esc(f.name)}</span><small>${countIn(f.id)} not</small></button>`).join('')}<button class="fchip add" data-act="newfolder">${ic('add',18)} Klasör</button></div>`}
  else if(view.scope==='archive')h+=`<div class="fhead"><h2>Arşiv</h2></div>`;
  else if(view.scope==='trash'){h+=`<div class="fhead"><h2>Çöp kutusu</h2><button class="btn ghost" data-act="empty">Boşalt</button></div><div class="hint">Çöp kutusundaki notlar kendiliğinden silinmez; yalnızca siz silerseniz silinir.</div>`}
@@ -285,10 +290,10 @@ function backupBanner(){const last=S.lastBackup||0,ch=notes.some(n=>!n.deleted&&
 const KIND={icerik:'Kitap içeriği (PDF)',kapak:'Kapak (PDF)',diger:'Diğer dosyalar'};
 function renderFiles(f){const l=files.filter(x=>!x.deleted&&x.folderId===f.id);
  if(!l.length)return `<div class="empty">${ic('file',64)}<div>Bu klasörde henüz dosya yok.<br>Biten kitabın içerik ve kapak PDF'lerini + ile yükleyin.</div></div>`;
- let h='';for(const k of Object.keys(KIND)){const g=l.filter(x=>x.kind===k).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||b.updated-a.updated);if(!g.length)continue;
-  h+=`<div class="sec">${KIND[k]}</div>`+g.map(x=>`<div class="frow"><div class="fi">${ic('file')}</div><div class="ft" data-act="fopen" data-id="${x.id}"><b>${esc(x.name)}</b><small>${fsize(x.size)} · ${fdate(x.updated)}</small></div>${x.pinned?`<span style="color:var(--primary)">${ic('pin',18)}</span>`:''}<button class="icb" data-act="fmore" data-id="${x.id}">${ic('more')}</button></div>`).join('')}
+ let h='';for(const k of Object.keys(KIND)){const g=l.filter(x=>x.kind===k).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(ord(a)-ord(b))||b.updated-a.updated);if(!g.length)continue;
+  h+=`<div class="sec">${KIND[k]}</div><div class="fgrp">`+g.map(x=>`<div class="frow" data-id="${x.id}"><div class="fi">${ic('file')}</div><div class="ft" data-act="fopen" data-id="${x.id}"><b>${esc(x.name)}</b><small>${fsize(x.size)} · ${fdate(x.updated)}</small></div>${x.pinned?`<span style="color:var(--primary)">${ic('pin',18)}</span>`:''}<button class="icb" data-act="fmore" data-id="${x.id}">${ic('more')}</button></div>`).join('')+'</div>'}
  return h}
-function renderDrawer(){const d=$('#drawer');const fs=folders.filter(f=>!f.deleted).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||a.name.localeCompare(b.name,'tr'));
+function renderDrawer(){const d=$('#drawer');const fs=folders.filter(f=>!f.deleted).sort(folderSort);
  const act=notes.filter(n=>!n.deleted&&n.state==='active').length,ar=notes.filter(n=>!n.deleted&&n.state==='archive').length,tr=notes.filter(n=>!n.deleted&&n.state==='trash').length;
  d.innerHTML=`<div class="dlogo">${LOGO}<span>Not Defteri</span></div>
  <button class="ditem ${view.scope==='all'?'on':''}" data-d="all">${ic('notes')}Tüm notlar<span class="n">${act}</span></button>
@@ -310,7 +315,7 @@ function openDrawer(){$('#drawer').classList.add('on');$('#scrim').classList.add
 function closeDrawer(){$('#drawer').classList.remove('on');$('#scrim').classList.remove('on')}
 $('#hMenu').onclick=openDrawer;$('#scrim').onclick=closeDrawer;
 $('#hView').onclick=()=>{S.layout=S.layout==='grid'?'list':'grid';saveS();render()};
-$('#hSort').onclick=()=>menu('Sırala',[{label:(S.sort==='updated'?'✓ ':'')+'Son düzenlenen',fn:()=>{S.sort='updated';saveS();render()}},{label:(S.sort==='created'?'✓ ':'')+'Oluşturulma tarihi',fn:()=>{S.sort='created';saveS();render()}},{label:(S.sort==='title'?'✓ ':'')+'Başlık (A-Z)',fn:()=>{S.sort='title';saveS();render()}}]);
+$('#hSort').onclick=()=>menu('Sırala',[{label:(S.sort==='manual'?'✓ ':'')+'Elle sıralama (basılı tutup sürükleyin)',fn:()=>{S.sort='manual';saveS();render()}},{label:(S.sort==='updated'?'✓ ':'')+'Son düzenlenen',fn:()=>{S.sort='updated';saveS();render()}},{label:(S.sort==='created'?'✓ ':'')+'Oluşturulma tarihi',fn:()=>{S.sort='created';saveS();render()}},{label:(S.sort==='title'?'✓ ':'')+'Başlık (A-Z)',fn:()=>{S.sort='title';saveS();render()}}]);
 $('#hSync').onclick=()=>syncNow(true);
 let qt;$('#q').oninput=e=>{clearTimeout(qt);qt=setTimeout(()=>{q=e.target.value.trim();renderTop();renderMain()},150)};
 $('#drawer').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;const d=b.dataset.d;
@@ -320,11 +325,36 @@ $('#drawer').onclick=e=>{const b=e.target.closest('[data-d]');if(!b)return;const
  else if(d==='newfolder'){closeDrawer();createFolderFlow()}};
 async function createFolderFlow(){const n=await ask('Yeni klasör adı','','Örn. Destanlaşan Hayatlar');if(!n)return;const f=newFolder(n);go({scope:'folder',folderId:f.id});toast('Klasör oluşturuldu')}
 $('#fab').onclick=()=>{if(view.scope==='folder'&&view.tab==='files')uploadFlow(view.folderId);else openEditor(null)};
-/* uzun basma ile seçim */
-let lpT=null,lpDone=false;
+/* uzun basma: sürükleyerek sırala / (notlarda bırakınca) seçim */
+let lpDone=false,dg=null;
 const mainEl=$('#main');
-mainEl.addEventListener('pointerdown',e=>{const c=e.target.closest('.card');lpDone=false;if(!c)return;clearTimeout(lpT);lpT=setTimeout(()=>{lpDone=true;if(!selecting){selecting=true;}toggleSel(c.dataset.id);if(navigator.vibrate)navigator.vibrate(15)},480)});
-['pointerup','pointercancel','pointermove','scroll'].forEach(ev=>mainEl.addEventListener(ev,()=>clearTimeout(lpT),{passive:true}));
+function dragItem(t){let e=t.closest('.card[data-id]');if(e)return{el:e,type:'note',sel:'.card[data-id]'};e=t.closest('.fchip[data-id]');if(e)return{el:e,type:'folder',sel:'.fchip[data-id]'};e=t.closest('.frow[data-id]');if(e)return{el:e,type:'file',sel:'.frow[data-id]'};return null}
+mainEl.addEventListener('pointerdown',e=>{if(dg||(e.pointerType==='mouse'&&e.button!==0))return;const it=dragItem(e.target);if(!it)return;lpDone=false;
+ dg=Object.assign({},it,{id:it.el.dataset.id,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,armed:false,moved:false});dg.tm=setTimeout(armDrag,450)});
+mainEl.addEventListener('contextmenu',e=>{if(dragItem(e.target))e.preventDefault()});
+function armDrag(){const d=dg;if(!d)return;
+ if(d.type==='note'&&(selecting||q||view.scope==='trash')){lpDone=true;dg=null;if(!selecting)selecting=true;toggleSel(d.id);if(navigator.vibrate)navigator.vibrate(15);return}
+ d.armed=true;lpDone=true;if(navigator.vibrate)navigator.vibrate(15);
+ const r=d.el.getBoundingClientRect();d.offX=d.x-r.left;d.offY=d.y-r.top;
+ const g=d.el.cloneNode(true);g.style.cssText='position:fixed;left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;margin:0;z-index:60;pointer-events:none;opacity:.92;transform:scale(1.05);box-shadow:0 12px 30px rgba(0,0,0,.35)';document.body.appendChild(g);d.ghost=g;d.el.style.opacity='.3';d.scT=setInterval(autoScroll,16)}
+function clearMarks(){document.querySelectorAll('.dt-a,.dt-b').forEach(x=>x.classList.remove('dt-a','dt-b'))}
+function updTarget(){const d=dg;if(!d||!d.armed)return;const el=document.elementFromPoint(d.x,d.y);const t=el&&el.closest(d.sel);if(!t||t===d.el||t.parentElement!==d.el.parentElement)return;
+ clearMarks();const r=t.getBoundingClientRect();d.target=t;d.after=d.type==='folder'?d.x>r.left+r.width/2:d.y>r.top+r.height/2;t.classList.add(d.after?'dt-a':'dt-b')}
+function autoScroll(){const d=dg;if(!d||!d.armed)return;let ch=false;if(d.y<150){mainEl.scrollTop-=14;ch=true}else if(d.y>innerHeight-150){mainEl.scrollTop+=14;ch=true}
+ if(d.type==='folder'){const c=d.el.parentElement;if(d.x<60){c.scrollLeft-=14;ch=true}else if(d.x>innerWidth-60){c.scrollLeft+=14;ch=true}}if(ch)updTarget()}
+document.addEventListener('pointermove',e=>{const d=dg;if(!d)return;d.x=e.clientX;d.y=e.clientY;
+ if(!d.armed){if(Math.hypot(d.x-d.x0,d.y-d.y0)>10){clearTimeout(d.tm);dg=null}return}
+ if(Math.hypot(d.x-d.x0,d.y-d.y0)>8)d.moved=true;d.ghost.style.left=(d.x-d.offX)+'px';d.ghost.style.top=(d.y-d.offY)+'px';updTarget()});
+function endDrag(d){clearTimeout(d.tm);clearInterval(d.scT);if(d.ghost)d.ghost.remove();d.el.style.opacity='';clearMarks()}
+document.addEventListener('pointerup',()=>{const d=dg;if(!d)return;dg=null;if(!d.armed){clearTimeout(d.tm);return}endDrag(d);
+ if(d.moved&&d.target)dropItem(d);else if(!d.moved&&d.type==='note'&&!selecting){selecting=true;toggleSel(d.id)}});
+document.addEventListener('pointercancel',()=>{const d=dg;if(!d)return;dg=null;endDrag(d)});
+document.addEventListener('touchmove',e=>{if(dg&&dg.armed&&e.cancelable)e.preventDefault()},{passive:false});
+mainEl.addEventListener('scroll',()=>{if(dg&&!dg.armed){clearTimeout(dg.tm);dg=null}},{passive:true});
+function dropItem(d){const cont=d.el.parentElement;const ids=[...cont.querySelectorAll(d.sel)].map(x=>x.dataset.id).filter(i=>i!==d.id);let ti=ids.indexOf(d.target.dataset.id);if(d.after)ti++;ids.splice(ti,0,d.id);
+ const arr=d.type==='note'?notes:d.type==='folder'?folders:files,put=d.type==='note'?putNote:d.type==='folder'?putFolder:putFile;
+ ids.forEach((id,i)=>{const it=arr.find(x=>x.id===id);if(it&&it.order!==i*10){it.order=i*10;put(it)}});
+ if(d.type==='note'&&S.sort!=='manual'){S.sort='manual';saveS();toast('Elle sıralama açıldı')}render()}
 function toggleSel(id){sel.has(id)?sel.delete(id):sel.add(id);if(!sel.size)selecting=false;renderTop();renderMain()}
 mainEl.addEventListener('click',e=>{if(lpDone){lpDone=false;return}
  const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,id=b.dataset.id;
