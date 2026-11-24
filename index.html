@@ -2,13 +2,12 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<meta name="theme-color" content="#2b8fd6">
+<meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Not Defteri</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23a9dbf7'/%3E%3Cpath d='M256 176c-34-24-82-30-124-18v196c42-12 90-6 124 18 34-24 82-30 124-18V158c-42-12-90-6-124 18z' fill='%23fff'/%3E%3Cpath d='M256 176v196' stroke='%232b8fd6' stroke-width='10'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23000'/%3E%3Cpath d='M256 190C220 165 170 160 126 172V342C170 330 220 335 256 360 292 335 342 330 386 342V172C342 160 292 165 256 190ZM256 190V360' fill='none' stroke='%238fd0f3' stroke-width='18' stroke-linejoin='round'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{--bg:#eaf4fc;--surface:#fff;--primary:#2b8fd6;--primary-d:#1c6fb0;--on-primary:#fff;--ink:#16324a;--muted:#6a8399;--line:#d3e5f3;--chip:#dcecfa;--shadow:0 2px 10px rgba(30,90,140,.12);
@@ -45,9 +44,12 @@ input,select,textarea{font:inherit;color:inherit}
 #main{flex:1;overflow-y:auto;padding:4px 12px 110px;-webkit-overflow-scrolling:touch}
 .fchips{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:none}
 .fchips::-webkit-scrollbar{display:none}
-.fchip{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:18px;padding:10px 14px;box-shadow:var(--shadow);white-space:nowrap;flex:none;font-weight:600}
-.fchip small{color:var(--muted);font-weight:500}
-.fchip.add{color:var(--primary);background:var(--chip);box-shadow:none}
+.fchips{align-items:stretch;padding:4px 4px 16px}
+.fchip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:20px;padding:14px 16px;min-width:96px;max-width:170px;min-height:68px;box-shadow:0 6px 18px rgba(0,0,0,.22);flex:none;font-weight:700;font-size:15px;line-height:1.2;text-align:center;word-break:break-word;position:relative}
+.fchip:active{transform:scale(.96)}
+.fchip small{opacity:.75;font-weight:500;font-size:11.5px}
+.fchip .pn{position:absolute;top:6px;right:8px;opacity:.8}
+.fchip.add{color:var(--primary);background:var(--chip);box-shadow:none;flex-direction:row;gap:6px;min-width:0}
 .fdot{width:14px;height:14px;border-radius:50%;flex:none}
 .fhead{display:flex;align-items:center;gap:10px;padding:6px 2px}
 .fhead h2{margin:0;flex:1;font-size:22px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -200,19 +202,19 @@ up:'M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z',
 down:'M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z'
 };
 const ic=(n,s=24)=>`<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor"><path d="${ICONS[n]}"/></svg>`;
-const LOGO=`<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d6eefc"/><stop offset="1" stop-color="#8fd0f3"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#lg)"/><path d="M256 190c-36-26-88-32-134-18v182c46-14 98-8 134 18 36-26 88-32 134-18V172c-46-14-98-8-134 18z" fill="#1c9aa8" opacity=".35" transform="translate(0 14)"/><path d="M256 176c-36-26-88-32-134-18v182c46-14 98-8 134 18 36-26 88-32 134-18V158c-46-14-98-8-134 18z" fill="#fff"/><path d="M256 176v182" stroke="#2b8fd6" stroke-width="10" fill="none"/><path d="M152 206c30-6 66-2 90 14M152 250c30-6 66-2 90 14M152 294c30-6 66-2 90 14M360 206c-30-6-66-2-90 14M360 250c-30-6-66-2-90 14" stroke="#7cc4ee" stroke-width="10" stroke-linecap="round" fill="none"/><path d="M322 150v78l20-15 20 15v-78z" fill="#10a5a5"/></svg>`;
+const LOGO=`<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><rect width="512" height="512" rx="112" fill="#000"/><g fill="none" stroke="#8fd0f3" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"><path d="M256 190C220 165 170 160 126 172V342C170 330 220 335 256 360 292 335 342 330 386 342V172C342 160 292 165 256 190Z"/><path d="M256 190V360"/><path d="M168 218C192 214 214 218 232 230M168 262C192 258 214 262 232 274M344 218C320 214 298 218 280 230M344 262C320 258 298 262 280 274" stroke-width="12"/></g></svg>`;
 const FC=['#2b8fd6','#0fa3a3','#e0784f','#c9a227','#6a9f3b','#8a63d2','#d9558a','#607d8b'];
 const FP=['#2b8fd6','#7cc4ee','#0fa3a3','#7fd6c8','#6a9f3b','#b5d98a','#c9a227','#f2d46b','#e0784f','#f2a98a','#d9558a','#f2a6c4','#8a63d2','#c4b0ec','#607d8b','#b9c4cc','#8a6d3b','#d8c39a','#2f2f2f','#ffffff'];
 const fcol=f=>f.hex||FC[f.color||0];
 const lum=h=>{const m=/^#?([0-9a-f]{6})$/i.exec(h);if(!m)return 1;const n=parseInt(m[1],16),r=n>>16,g=n>>8&255,b=n&255;return(0.299*r+0.587*g+0.114*b)/255};
 const onCol=h=>lum(h)>0.6?'#1b2a38':'#ffffff';
-const chipStyle=f=>f.hex?`background:${f.hex};color:${onCol(f.hex)}`:'';
+const chipStyle=f=>{const c=fcol(f);return `background:${c};color:${onCol(c)}`};
 const NC=['var(--n0)','var(--n1)','var(--n2)','var(--n3)','var(--n4)','var(--n5)','var(--n6)','var(--n7)','var(--n8)'];
 
 /* ============ Ayarlar ============ */
 const S=Object.assign({theme:'sky',fs:18,layout:'grid',sort:'updated',indent:true,clientId:'',autosync:true,lastSync:0,connected:false,lastFmt:'docx',lastMode:'zip',xfiles:true},JSON.parse(localStorage.getItem('nd_settings')||'{}'));
 const saveS=()=>{try{localStorage.setItem('nd_settings',JSON.stringify(S))}catch(e){}};
-function applyTheme(){document.documentElement.dataset.theme=S.theme;const t=THEMES.find(x=>x[0]===S.theme)||THEMES[0];$('meta[name=theme-color]').content=t[4]?t[3]:t[2]}
+function applyTheme(){document.documentElement.dataset.theme=S.theme;}
 
 /* ============ Veritabanı (IndexedDB — sınırsız uzunlukta metin) ============ */
 let db;
@@ -262,7 +264,7 @@ function renderMain(){const m=$('#main');let h='';const searching=!!q;
   h+=`<div class="fhead"><div class="fdot" style="background:${fcol(f)}"></div><h2>${esc(f.name)}</h2><button class="icb" data-act="fmenu">${ic('more')}</button></div><div class="tabs"><button class="${view.tab==='notes'?'on':''}" data-act="tab" data-v="notes">Notlar (${countIn(f.id)})</button><button class="${view.tab==='files'?'on':''}" data-act="tab" data-v="files">Dosyalar (${nf})</button></div>`;
   if(view.tab==='files'){m.innerHTML=h+renderFiles(f);return}}
  else if(view.scope==='all'){h+=backupBanner();const fs=folders.filter(f=>!f.deleted).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||a.name.localeCompare(b.name,'tr'));
-  h+=`<div class="fchips">${fs.map(f=>`<button class="fchip" data-act="folder" data-id="${f.id}" style="${chipStyle(f)}"><span class="fdot" style="background:${f.hex?onCol(f.hex):fcol(f)}"></span>${esc(f.name)}<small>${countIn(f.id)}</small>${f.pinned?ic('pin',14):''}</button>`).join('')}<button class="fchip add" data-act="newfolder">${ic('add',18)} Klasör</button></div>`}
+  h+=`<div class="fchips">${fs.map(f=>`<button class="fchip" data-act="folder" data-id="${f.id}" style="${chipStyle(f)}">${f.pinned?`<span class="pn">${ic('pin',13)}</span>`:''}<span>${esc(f.name)}</span><small>${countIn(f.id)} not</small></button>`).join('')}<button class="fchip add" data-act="newfolder">${ic('add',18)} Klasör</button></div>`}
  else if(view.scope==='archive')h+=`<div class="fhead"><h2>Arşiv</h2></div>`;
  else if(view.scope==='trash'){h+=`<div class="fhead"><h2>Çöp kutusu</h2><button class="btn ghost" data-act="empty">Boşalt</button></div><div class="hint">Çöp kutusundaki notlar kendiliğinden silinmez; yalnızca siz silerseniz silinir.</div>`}
  const l=visibleNotes();
