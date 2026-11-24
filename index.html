@@ -94,6 +94,9 @@ hr{border:0;border-top:1px solid var(--line);margin:10px 8px}
 #edTitle{border:0;outline:0;background:none;font-size:24px;font-weight:700;padding:6px 18px 2px;width:100%}
 #edMeta{padding:0 18px 6px;font-size:12px;color:var(--muted)}
 #edBody{flex:1;border:0;outline:0;background:none;resize:none;padding:6px 18px 20px;line-height:1.65;width:100%;min-height:0}
+.edimgs{display:none;gap:8px;overflow-x:auto;padding:6px 14px 8px;flex:none}
+.thumb{width:76px;height:76px;border-radius:12px;overflow:hidden;flex:none;border:1px solid var(--line);background:var(--chip);display:grid;place-items:center}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .ed-find{display:none;align-items:center;gap:6px;padding:6px 10px;background:var(--chip)}
 .ed-find.on{display:flex}
 .ed-find input{flex:1;min-width:0;border:0;outline:0;background:var(--surface);border-radius:20px;padding:8px 14px}
@@ -159,6 +162,8 @@ input[type=range]{width:100%;accent-color:var(--primary)}
 <div id="sheetHost"></div>
 <div id="toast"></div>
 <input type="file" id="fileIn" multiple hidden>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+<input type="file" id="imgIn" accept="image/*" multiple hidden>
 <script>
 'use strict';
 /* ============ Yardımcılar ============ */
@@ -198,6 +203,8 @@ list:'M3 14h18v-4H3v4zm0 5h18v-4H3v4zM3 5v4h18V5H3z',
 sort:'M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z',
 copy:'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
 cloud:'M19.35 10.04A7.49 7.49 0 0012 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 000 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z',
+camera:'M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4zM9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z',
+image:'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z',
 up:'M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z',
 down:'M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z'
 };
@@ -256,7 +263,7 @@ function visibleNotes(){let l=notes.filter(n=>!n.deleted);
  else{l=l.filter(n=>n.state==='active');if(view.scope==='folder')l=l.filter(n=>n.folderId===view.folderId)}
  return sortList(l)}
 function cardHtml(n){const f=n.folderId&&folderById(n.folderId);const showF=f&&view.scope!=='folder';
- return `<div class="card ${sel.has(n.id)?'sel':''}" data-act="note" data-id="${n.id}" style="background:${NC[n.color||0]}">${n.pinned?`<span class="pinm">${ic('pin',16)}</span>`:''}<span class="ck">${ic('check',16)}</span>${n.title?`<h4>${esc(n.title)}</h4>`:''}<p>${esc(n.body.slice(0,400))}</p><div class="meta">${showF?`<span class="badge">${esc(f.name)}</span>`:''}<span>${fdate(n.updated)}</span></div></div>`}
+ return `<div class="card ${sel.has(n.id)?'sel':''}" data-act="note" data-id="${n.id}" style="background:${NC[n.color||0]}">${n.pinned?`<span class="pinm">${ic('pin',16)}</span>`:''}<span class="ck">${ic('check',16)}</span>${n.title?`<h4>${esc(n.title)}</h4>`:''}<p>${esc(n.body.slice(0,400))}</p><div class="meta">${showF?`<span class="badge">${esc(f.name)}</span>`:''}<span>${fdate(n.updated)}</span>${imgsOf(n.id).length?`<span class="badge">Resim ${imgsOf(n.id).length}</span>`:''}</div></div>`}
 function renderMain(){const m=$('#main');let h='';const searching=!!q;
  if(searching)h+=`<div class="sec">Arama sonuçları</div>`;
  else if(view.scope==='folder'){const f=folderById(view.folderId);if(!f){view={scope:'all',folderId:null,tab:'notes'};return renderMain()}
@@ -338,7 +345,7 @@ $('#selTop').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const
  else if(a==='more')menu(`${ns.length} not`,[{ic:'folder',label:'Klasöre taşı',fn:()=>pickFolder('Taşınacak klasör',fid=>{ns.forEach(n=>{n.folderId=fid;putNote(n)});selecting=false;sel.clear();render();toast('Taşındı')},true)},{ic:'archive',label:'Arşivle',fn:()=>{ns.forEach(n=>{n.state='archive';putNote(n)});selecting=false;sel.clear();render()}},{ic:'delete',label:'Çöp kutusuna taşı',danger:1,fn:()=>{ns.forEach(n=>{n.state='trash';n.trashedAt=Date.now();putNote(n)});selecting=false;sel.clear();render();toast('Çöp kutusuna taşındı')}}]);
  else if(a==='restore'){ns.forEach(n=>{n.state='active';putNote(n)});selecting=false;sel.clear();render()}
  else if(a==='purge')confirmBox(ns.length+' not kalıcı silinsin mi?').then(ok=>{if(ok){ns.forEach(purgeNote);selecting=false;sel.clear();render()}})};
-function purgeNote(n){const t={id:n.id,deleted:true,updated:Date.now()};const i=notes.findIndex(x=>x.id===n.id);notes[i]=t;idbPut('notes',t);syncSoon()}
+function purgeNote(n){files.filter(x=>!x.deleted&&x.noteId===n.id).forEach(delFileRec);const t={id:n.id,deleted:true,updated:Date.now()};const i=notes.findIndex(x=>x.id===n.id);notes[i]=t;idbPut('notes',t);syncSoon()}
 function trashMenu(n){menu(n.title||'Not',[{ic:'restore',label:'Geri yükle',fn:()=>{n.state='active';putNote(n);render()}},{ic:'delete',label:'Kalıcı olarak sil',danger:1,fn:async()=>{if(await confirmBox('Bu not kalıcı silinsin mi?')){purgeNote(n);render()}}}])}
 async function emptyTrash(){const l=notes.filter(n=>!n.deleted&&n.state==='trash');if(!l.length)return;if(await confirmBox('Çöp kutusundaki '+l.length+' not kalıcı silinsin mi?','Boşalt')){l.forEach(purgeNote);render()}}
 function folderMenu(f){menu(f.name,[
@@ -364,9 +371,10 @@ function openEditor(id){let n,isNew=false;
  e.innerHTML=`<div class="ed-top"><button class="icb" data-e="back">${ic('back')}</button><span class="sp"></span><button class="icb" data-e="pin">${ic('pin')}</button><button class="icb" data-e="folder">${ic('folder')}</button><button class="icb" data-e="archive">${ic('archive')}</button><button class="icb" data-e="more">${ic('more')}</button></div>
  <input id="edTitle" placeholder="Başlık" autocomplete="off"><div id="edMeta"></div>
  <textarea id="edBody" placeholder="Not yazın veya metni yapıştırın…" spellcheck="true"></textarea>
+ <div class="edimgs" id="edImgs"></div>
  <div class="ed-find" id="edFind"><input id="edFq" placeholder="Not içinde bul"><button class="icb" data-e="fprev">${ic('up')}</button><button class="icb" data-e="fnext">${ic('down')}</button><button class="icb" data-e="fclose">${ic('close')}</button></div>
- <div class="ed-bot"><button class="icb" data-e="fminus" style="font-size:15px;font-weight:700">A−</button><button class="icb" data-e="fplus" style="font-size:19px;font-weight:700">A+</button><button class="icb" data-e="color">${ic('palette')}</button><span class="stat" id="edStat"></span></div>`;
- const t=$('#edTitle'),b=$('#edBody');t.value=n.title;b.value=n.body;styleEd();updMeta();updStat();pinIcon();
+ <div class="ed-bot"><button class="icb" data-e="fminus" style="font-size:15px;font-weight:700">A−</button><button class="icb" data-e="fplus" style="font-size:19px;font-weight:700">A+</button><button class="icb" data-e="color">${ic('palette')}</button><button class="icb" data-e="cam" title="Fotoğraf çek">${ic('camera')}</button><button class="icb" data-e="gal" title="Galeriden resim ekle">${ic('image')}</button><span class="stat" id="edStat" style="font-size:11px"></span></div>`;
+ const t=$('#edTitle'),b=$('#edBody');t.value=n.title;b.value=n.body;styleEd();updMeta();updStat();pinIcon();renderImgs();
  e.classList.add('on');editorOpen=true;history.pushState({o:'ed'},'');
  if(isNew)setTimeout(()=>b.focus(),80);
  const touch=()=>{if(!cur.persisted){notes.push(cur.n);cur.persisted=true}cur.n.title=t.value;cur.n.body=b.value;cur.n.updated=Date.now();dirty=true;setSave('…');clearTimeout(saveT);saveT=setTimeout(flush,400);updStat()};
@@ -386,12 +394,12 @@ function doFind(dir,fresh){const b=$('#edBody'),qq=$('#edFq').value;if(!qq)retur
  if(i<0){toast('Bulunamadı');return}
  b.focus();b.setSelectionRange(i,i+k.length);const lines=b.value.slice(0,i).split('\n').length;b.scrollTop=Math.max(0,(i/Math.max(1,b.value.length))*b.scrollHeight-b.clientHeight/2)}
 function closeEditorUI(){if(!editorOpen)return;flush();const n=cur.n;
- if(cur.persisted&&!(n.title||'').trim()&&!n.body.trim()){const t={id:n.id,deleted:true,updated:Date.now()};notes[notes.findIndex(x=>x.id===n.id)]=t;idbPut('notes',t)}
- $('#editor').classList.remove('on');editorOpen=false;cur=null;render()}
+ if(cur.persisted&&!(n.title||'').trim()&&!n.body.trim()&&!files.some(x=>!x.deleted&&x.noteId===n.id)){const t={id:n.id,deleted:true,updated:Date.now()};notes[notes.findIndex(x=>x.id===n.id)]=t;idbPut('notes',t)}
+ imgUrls.forEach(u=>URL.revokeObjectURL(u));imgUrls=[];$('#editor').classList.remove('on');editorOpen=false;cur=null;render()}
 window.addEventListener('popstate',()=>{if(editorOpen)closeEditorUI();else if($('#settings').classList.contains('on'))closeSettingsUI()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();else if(S.connected&&Date.now()-S.lastSync>90000)syncSoon(500)});
 window.addEventListener('pagehide',flush);
-$('#editor').onclick=e=>{const b=e.target.closest('[data-e]');if(!b)return;const a=b.dataset.e,n=cur.n;
+$('#editor').onclick=e=>{const im=e.target.closest('[data-img]');if(im){viewImage(im.dataset.img);return}const b=e.target.closest('[data-e]');if(!b)return;const a=b.dataset.e,n=cur.n;
  if(a==='back')history.back();
  else if(a==='pin'){n.pinned=!n.pinned;touchNow();pinIcon();toast(n.pinned?'Sabitlendi':'Sabitleme kaldırıldı')}
  else if(a==='folder')pickFolder('Klasöre taşı',fid=>{n.folderId=fid;touchNow();updMeta();toast('Taşındı')},true);
@@ -404,10 +412,25 @@ $('#editor').onclick=e=>{const b=e.target.closest('[data-e]');if(!b)return;const
   {ic:'download',label:'Bu notu dışa aktar / gönder',fn:()=>{touchNow();exportDialog('Bu notu dışa aktar / gönder',()=>[{folder:null,name:safe(n.title||'Not'),notes:[n],files:[]}])}},
   {ic:'add',label:'Kopyasını oluştur',fn:()=>{const c=Object.assign({},n,{id:uid(),title:(n.title||'Not')+' (kopya)',created:Date.now(),updated:Date.now()});notes.push(c);putNote(c);toast('Kopya oluşturuldu')}},
   {ic:'delete',label:'Çöp kutusuna taşı',danger:1,fn:()=>{n.state='trash';n.trashedAt=Date.now();touchNow();toast('Çöp kutusuna taşındı');history.back()}}]);
+ else if(a==='cam'){touchNow();const i=$('#camIn');i.value='';i.click()}
+ else if(a==='gal'){touchNow();const i=$('#imgIn');i.value='';i.click()}
  else if(a==='fnext')doFind(1);else if(a==='fprev')doFind(-1);
  else if(a==='fclose')$('#edFind').classList.remove('on')};
 function touchNow(){if(!cur.persisted){notes.push(cur.n);cur.persisted=true}cur.n.title=$('#edTitle').value;cur.n.body=$('#edBody').value;cur.n.updated=Date.now();dirty=true;flush()}
 
+/* ============ Not içi resimler ============ */
+let imgUrls=[];
+async function shrink(file){try{const bm=await createImageBitmap(file,{imageOrientation:'from-image'});const m=Math.max(bm.width,bm.height),sc=m>1600?1600/m:1;const c=document.createElement('canvas');c.width=Math.round(bm.width*sc);c.height=Math.round(bm.height*sc);c.getContext('2d').drawImage(bm,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,'image/jpeg',0.82));return b&&b.size<file.size?b:file}catch(e){return file}}
+const imgsOf=id=>files.filter(x=>!x.deleted&&x.noteId===id).sort((a,b)=>a.created-b.created);
+async function addImages(fl){if(!cur||!fl.length)return;touchNow();let k=imgsOf(cur.n.id).length;
+ for(const f of fl){const b=await shrink(f);const r={id:uid(),folderId:null,noteId:cur.n.id,kind:'resim',name:safe(cur.n.title||'Not')+'_resim'+(++k)+'.'+(/png/.test(b.type)?'png':'jpg'),type:b.type||'image/jpeg',size:b.size,pinned:false,created:Date.now(),updated:Date.now()};await idbPut('blobs',b,r.id);files.push(r);putFile(r)}
+ await renderImgs();toast(fl.length+' resim eklendi')}
+async function renderImgs(){imgUrls.forEach(u=>URL.revokeObjectURL(u));imgUrls=[];const box=$('#edImgs');if(!box||!cur)return;const l=imgsOf(cur.n.id);box.style.display=l.length?'flex':'none';let h='';
+ for(const r of l){const b=await idbGet('blobs',r.id);if(!b){h+=`<div class="thumb">…</div>`;continue}const u=URL.createObjectURL(b);imgUrls.push(u);h+=`<button class="thumb" data-img="${r.id}"><img src="${u}" alt=""></button>`}box.innerHTML=h}
+async function viewImage(id){const r=files.find(x=>x.id===id),b=await idbGet('blobs',id);if(!b)return toast('Resim bu cihazda yok');const u=URL.createObjectURL(b);
+ sheet(`<img src="${u}" style="width:100%;max-height:60dvh;object-fit:contain;border-radius:12px;background:var(--chip)"><div class="row end"><button class="btn ghost" id="ivDel" style="color:#d64040">${ic('delete',18)} Sil</button><button class="btn ghost" id="ivSh">${ic('share',18)} Paylaş</button><button class="btn" id="ivOk">Kapat</button></div>`,sh=>{const cl=()=>{URL.revokeObjectURL(u);closeSheet()};sheetCancel=()=>URL.revokeObjectURL(u);sh.querySelector('#ivOk').onclick=cl;sh.querySelector('#ivSh').onclick=()=>shareFiles([{name:r.name,blob:b}]);sh.querySelector('#ivDel').onclick=async()=>{cl();if(await confirmBox('Bu resim silinsin mi?')){delFileRec(r);renderImgs()}}})}
+$('#camIn').onchange=e=>addImages([...e.target.files]);$('#imgIn').onchange=e=>addImages([...e.target.files]);
+async function noteImgData(ns){const m={};for(const n of ns){const l=imgsOf(n.id);if(!l.length)continue;m[n.id]=[];for(const r of l){const b=await idbGet('blobs',r.id);if(b)m[n.id].push(await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b)}))}}return m}
 /* ============ Dosyalar (kitap içeriği / kapak PDF'leri) ============ */
 let uploadCtx=null;
 function uploadFlow(fid){menu('Hangi dosyayı yüklüyorsunuz?',[{ic:'file',label:'Kitap içeriği (PDF)',fn:()=>pickUpload(fid,'icerik','application/pdf,.pdf')},{ic:'file',label:'Kapak (PDF)',fn:()=>pickUpload(fid,'kapak','application/pdf,.pdf')},{ic:'file',label:'Diğer dosya (Word, resim…)',fn:()=>pickUpload(fid,'diger','')}])}
@@ -446,19 +469,23 @@ async function readZip(buf){const dv=new DataView(buf),u8=new Uint8Array(buf);le
   const out=new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return new Uint8Array(await new Response(out).arrayBuffer())};
  return{entries,read}}
 const xe=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
-async function docxBlob(ns,indent){let b='';
+async function docxBlob(ns,indent){let b='';const media=[],imgOf={};let rid=10,did=1;
+ for(const n of ns){imgOf[n.id]=[];for(const r of imgsOf(n.id)){const bl=await idbGet('blobs',r.id);if(!bl)continue;let w=800,h=600;try{const bm=await createImageBitmap(bl);w=bm.width;h=bm.height;if(bm.close)bm.close()}catch(e){}
+  const ext=/png/.test(bl.type)?'png':/gif/.test(bl.type)?'gif':'jpeg';const rr='rId'+(rid++);media.push({rid:rr,name:'media/image'+(media.length+1)+'.'+ext,data:new Uint8Array(await bl.arrayBuffer())});
+  let cx=Math.min(5400000,w*9525),cy=Math.round(cx*h/w);if(cy>7200000){cy=7200000;cx=Math.round(cy*w/h)}imgOf[n.id].push({rr,cx,cy})}}
  ns.forEach((n,i)=>{if(i>0)b+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   if(n.title)b+=`<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t xml:space="preserve">${xe(n.title)}</w:t></w:r></w:p>`;
-  n.body.split(/\r?\n/).forEach(l=>{if(!l.trim())return;b+=`<w:p><w:pPr>${indent?'<w:ind w:firstLine="567"/>':''}<w:jc w:val="both"/></w:pPr><w:r><w:t xml:space="preserve">${xe(l)}</w:t></w:r></w:p>`})});
- const W='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"',H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  n.body.split(/\r?\n/).forEach(l=>{if(!l.trim())return;b+=`<w:p><w:pPr>${indent?'<w:ind w:firstLine="567"/>':''}<w:jc w:val="both"/></w:pPr><w:r><w:t xml:space="preserve">${xe(l)}</w:t></w:r></w:p>`});
+  (imgOf[n.id]||[]).forEach(im=>{const id=did++;b+=`<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${im.cx}" cy="${im.cy}"/><wp:docPr id="${id}" name="Resim ${id}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="${id}" name="resim${id}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${im.rr}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${im.cx}" cy="${im.cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`})});
+ const W='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"',H='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
  const enc=new TextEncoder();
  return makeZip([
- {name:'[Content_Types].xml',data:enc.encode(H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>')},
+ {name:'[Content_Types].xml',data:enc.encode(H+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Default Extension="gif" ContentType="image/gif"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>')},
  {name:'_rels/.rels',data:enc.encode(H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')},
- {name:'word/_rels/document.xml.rels',data:enc.encode(H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>')},
+ {name:'word/_rels/document.xml.rels',data:enc.encode(H+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+media.map(m=>`<Relationship Id="${m.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="${m.name}"/>`).join('')+'</Relationships>')},
  {name:'word/styles.xml',data:enc.encode(H+`<w:styles ${W}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:lang w:val="tr-TR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:pPr><w:keepNext/><w:spacing w:before="240" w:after="240"/><w:jc w:val="center"/></w:pPr><w:rPr><w:b/><w:sz w:val="32"/></w:rPr></w:style></w:styles>`)},
  {name:'word/document.xml',data:enc.encode(H+`<w:document ${W}><w:body>${b||'<w:p/>'}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`)}
- ],'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
+ ,...media.map(m=>({name:'word/'+m.name,data:m.data}))],'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
 async function parseDocx(buf){const z=await readZip(buf);const e=z.entries.find(x=>x.name==='word/document.xml');if(!e)throw new Error('Geçersiz Word dosyası');
  const doc=new DOMParser().parseFromString(new TextDecoder().decode(await z.read(e)),'application/xml');const out=[];
  for(const p of doc.getElementsByTagNameNS('*','p')){let t='';const walk=nd=>{for(const c of nd.childNodes){const ln=c.localName;if(ln==='t')t+=c.textContent;else if(ln==='tab')t+='\t';else if(ln==='br')t+='\n';else if(c.childNodes&&c.childNodes.length)walk(c)}};walk(p);if(t.trim())out.push(t)}
@@ -473,22 +500,22 @@ const groupForFolder=f=>({folder:f,name:f.name,notes:notes.filter(n=>!n.deleted&
 const allGroups=()=>[{folder:null,name:'Klasörsüz',notes:notes.filter(n=>!n.deleted&&!n.folderId&&n.state!=='trash'),files:[]},...folders.filter(f=>!f.deleted).map(groupForFolder)];
 const noteTxt=n=>(n.title?n.title+'\n\n':'')+n.body;
 const EXT={docx:'docx',txt:'txt',md:'md',html:'html'};
-function htmlDoc(ns,indent,print){return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>${esc(ns.length===1?ns[0].title||'Not':'Notlar')}</title><style>@page{size:A4;margin:2cm}body{font-family:'Times New Roman',Georgia,serif;font-size:12pt;line-height:1.55;max-width:${print?'none':'760px'};margin:${print?'0':'24px auto'};padding:${print?'0':'0 16px'}}h1{font-size:18pt;text-align:center;margin:0 0 16pt}p{margin:0 0 6pt;text-align:justify;${indent?'text-indent:1cm;':''}}.n{${print?'page-break-after:always;':'margin-bottom:40px;'}}.n:last-child{page-break-after:auto}</style></head><body>${ns.map(n=>`<div class="n">${n.title?`<h1>${esc(n.title)}</h1>`:''}${n.body.split(/\r?\n/).filter(l=>l.trim()).map(l=>`<p>${esc(l)}</p>`).join('')}</div>`).join('')}</body></html>`}
+function htmlDoc(ns,indent,print,im){im=im||{};return `<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>${esc(ns.length===1?ns[0].title||'Not':'Notlar')}</title><style>@page{size:A4;margin:2cm}body{font-family:'Times New Roman',Georgia,serif;font-size:12pt;line-height:1.55;max-width:${print?'none':'760px'};margin:${print?'0':'24px auto'};padding:${print?'0':'0 16px'}}h1{font-size:18pt;text-align:center;margin:0 0 16pt}p{margin:0 0 6pt;text-align:justify;${indent?'text-indent:1cm;':''}}img{display:block;max-width:100%;max-height:18cm;margin:10pt auto}.n{${print?'page-break-after:always;':'margin-bottom:40px;'}}.n:last-child{page-break-after:auto}</style></head><body>${ns.map(n=>`<div class="n">${n.title?`<h1>${esc(n.title)}</h1>`:''}${n.body.split(/\r?\n/).filter(l=>l.trim()).map(l=>`<p>${esc(l)}</p>`).join('')}${(im[n.id]||[]).map(u=>`<img src="${u}">`).join('')}</div>`).join('')}</body></html>`}
 function printHtml(html){const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);f.onload=()=>setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print()}catch(e){toast('Yazdırma açılamadı')}setTimeout(()=>f.remove(),90000)},350);f.srcdoc=html}
 async function renderNotes(ns,fmt,indent){
  if(fmt==='docx')return docxBlob(ns,indent);
  if(fmt==='md')return new Blob([ns.map(n=>(n.title?'# '+n.title+'\n\n':'')+n.body).join('\n\n---\n\n')],{type:'text/markdown;charset=utf-8'});
- if(fmt==='html')return new Blob([htmlDoc(ns,indent,false)],{type:'text/html;charset=utf-8'});
+ if(fmt==='html')return new Blob([htmlDoc(ns,indent,false,await noteImgData(ns))],{type:'text/html;charset=utf-8'});
  return new Blob([ns.map(noteTxt).join('\n\n'+'─'.repeat(24)+'\n\n')],{type:'text/plain;charset=utf-8'})}
 async function buildBackup(groups){const ns=[],fs=[],fo=new Map();
  for(const g of groups){if(g.folder)fo.set(g.folder.id,g.folder);g.notes.forEach(n=>{ns.push(n);if(n.folderId){const f=folderById(n.folderId);if(f)fo.set(f.id,f)}});(g.files||[]).forEach(f=>fs.push(f))}
- const data={app:'notdefteri',version:1,exported:Date.now(),folders:[...fo.values()],notes:ns,files:fs};
+ ns.forEach(n=>imgsOf(n.id).forEach(r=>fs.push(r)));const data={app:'notdefteri',version:1,exported:Date.now(),folders:[...fo.values()],notes:ns,files:fs};
  const ent=[{name:'veri.json',data:new TextEncoder().encode(JSON.stringify(data))}];
  for(const f of fs){const b=await idbGet('blobs',f.id);if(b)ent.push({name:'dosyalar/'+f.id,data:b})}
  return makeZip(ent)}
 async function runExport(groups,o){const d=todayStr(),fmt=o.fmt;const all=groups.flatMap(g=>g.notes);const hasF=o.withFiles&&groups.some(g=>(g.files||[]).length);
  if(!all.length&&!hasF){toast('Dışa aktarılacak not yok');return}
- if(fmt==='pdf'){if(o.share)toast('PDF için açılan ekranda "PDF olarak kaydet"i seçin; sonra dosyayı paylaşabilirsiniz');printHtml(htmlDoc(all,o.indent,true));return}
+ if(fmt==='pdf'){if(o.share)toast('PDF için açılan ekranda "PDF olarak kaydet"i seçin; sonra dosyayı paylaşabilirsiniz');printHtml(htmlDoc(all,o.indent,true,await noteImgData(all)));return}
  const out=[];let zipName=(groups.length===1?safe(groups[0].name):'NotDefteri')+'_'+d+'.zip';
  if(fmt==='yedek'){S.lastBackup=Date.now();saveS();out.push({name:'NotDefteri_Yedek_'+d+'.zip',blob:await buildBackup(groups.map(g=>({...g,files:o.withFiles?g.files:[]})))})}
  else{const multi=groups.length>1||hasF;const ext=EXT[fmt];
