@@ -95,7 +95,8 @@ hr{border:0;border-top:1px solid var(--line);margin:10px 8px}
 .ed-top .sp{flex:1}
 #edTitle{border:0;outline:0;background:none;font-size:24px;font-weight:700;padding:6px 18px 2px;width:100%}
 #edMeta{padding:0 18px 6px;font-size:12px;color:var(--muted)}
-#edBody{flex:1;min-height:0;overflow-y:auto;outline:0;padding:6px 18px 20px;line-height:1.65;word-break:break-word;white-space:pre-wrap;-webkit-user-select:text;user-select:text;font-size:18px;position:relative}
+#edScroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+#edBody{flex:1 0 auto;min-height:45vh;outline:0;padding:6px 18px 20px;line-height:1.65;word-break:break-word;white-space:pre-wrap;-webkit-user-select:text;user-select:text;font-size:18px;position:relative}
 #edBody p{margin:0 0 .45em;min-height:1.65em}
 #edBody h1{font-size:1.5em;line-height:1.25;margin:.55em 0 .3em}
 #edBody h2{font-size:1.25em;line-height:1.3;margin:.5em 0 .25em}
@@ -170,7 +171,7 @@ input[type=range]{width:100%;accent-color:var(--primary)}
 .edaud{display:none;flex-direction:column;gap:6px;padding:4px 14px 8px;flex:none;max-height:32vh;overflow-y:auto}
 .arow{display:flex;align-items:center;gap:6px}
 .arow audio{flex:1;min-width:0;height:40px}
-#edList{display:none;flex:1;min-height:0;overflow-y:auto;padding:4px 14px 20px}
+#edList{display:none;flex:1 0 auto;padding:4px 14px 20px}
 .li{display:flex;align-items:center;gap:4px;padding:1px 0}
 .li .cb{width:34px;height:34px;flex:none;display:grid;place-items:center;color:var(--muted)}
 .li.done .cb{color:var(--primary)}
@@ -547,10 +548,9 @@ function openEditor(id,opts){opts=opts||{};let n,isNew=false;
  cur={n,isNew,persisted:!isNew};popK='';pend=false;
  const e=$('#editor');
  e.innerHTML=`<div class="ed-top"><button class="icb" data-e="back">${ic('back')}</button><span class="sp"></span><button class="icb" data-e="bell" title="Hatırlatıcı">${ic('bell')}</button><button class="icb" data-e="pin">${ic('pin')}</button><button class="icb" data-e="folder">${ic('folder')}</button><button class="icb" data-e="archive">${ic('archive')}</button><button class="icb" data-e="more">${ic('more')}</button></div>
- <input id="edTitle" placeholder="Başlık" autocomplete="off"><div id="edMeta"></div>
+ <div id="edScroll"><div class="edimgs" id="edImgs"></div><div class="edaud" id="edAud"></div><input id="edTitle" placeholder="Başlık" autocomplete="off"><div id="edMeta"></div>
  <div id="edBody" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" data-ph="Not yazın veya metni yapıştırın…"></div>
- <div id="edList"></div>
- <div class="edimgs" id="edImgs"></div><div class="edaud" id="edAud"></div>
+ <div id="edList"></div></div>
  <div class="ed-find" id="edFind"><input id="edFq" placeholder="Not içinde bul"><button class="icb" data-e="fprev">${ic('up')}</button><button class="icb" data-e="fnext">${ic('down')}</button><button class="icb" data-e="fclose">${ic('close')}</button></div>
  <div class="fmt" id="fmt">${fmtHtml()}</div>
  <div class="ed-bot" id="edBot"><button class="icb" data-e="aa" title="Biçimlendirme" style="font-weight:700;font-size:17px">Aa</button><button class="icb" data-e="color" title="Not rengi">${ic('palette')}</button><button class="icb" data-e="cam" title="Fotoğraf çek">${ic('camera')}</button><button class="icb" data-e="gal" title="Galeriden resim ekle">${ic('image')}</button><button class="icb" data-e="draw" title="Çizim ekle">${ic('brush')}</button><button class="icb" data-e="mic" title="Ses">${ic('mic')}</button><span class="stat" id="edStat" style="font-size:11px"></span></div>`;
@@ -684,7 +684,7 @@ function doFind(dir,fresh){if(cur.n.type==='list'){toast('Liste notlarında aram
  const loc=o=>{for(let j=nodes.length-1;j>=0;j--)if(nodes[j][1]<=o)return[nodes[j][0],o-nodes[j][1]];return[nodes[0][0],0]};
  const[a,ao]=loc(i),[b2,bo0]=loc(i+k.length-1);const r=document.createRange();r.setStart(a,ao);r.setEnd(b2,Math.min(b2.nodeValue.length,bo0+1));
  try{if(window.CSS&&CSS.highlights){CSS.highlights.set('find',new Highlight(r))}else throw 0}catch(x){e.focus({preventScroll:true});const s=getSelection();s.removeAllRanges();s.addRange(r)}
- const rc=r.getBoundingClientRect(),er=e.getBoundingClientRect();e.scrollTop+=rc.top-er.top-er.height/3}
+ const sc=$('#edScroll'),rc=r.getBoundingClientRect(),er=sc.getBoundingClientRect();sc.scrollTop+=rc.top-er.top-er.height/3}
 function clearFind(){try{if(window.CSS&&CSS.highlights)CSS.highlights.delete('find')}catch(x){}}
 function closeEditorUI(){if(!editorOpen)return;stopDict();closePop();clearFind();
  if(cur.n.type==='list'&&cur.n.items){cur.n.items=cur.n.items.filter(x=>x.t.trim());dirty=true}
