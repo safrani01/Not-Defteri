@@ -238,6 +238,7 @@ const ICONS={
 menu:'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z',
 search:'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
 add:'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+addbox:'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z',
 pin:'M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z',
 archive:'M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z',
 delete:'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
@@ -541,19 +542,19 @@ let cur=null,dirty=false,saveT=null,editorOpen=false,savedRange=null,pend=false,
 const findState={pos:0};
 const EDB=()=>$('#edBody');
 const FB=(k,inner,title)=>`<button class="fb" data-f="${k}" title="${title||''}">${inner}</button>`;
-function fmtHtml(){return `<div class="fmtrow">${FB('undo',ic('undo',22),'Geri al')}${FB('redo',ic('redo',22),'Yinele')}<span class="fsep"></span>${FB('b','<b>B</b>','Kalın')}${FB('i','<i style="font-family:serif">I</i>','İtalik')}${FB('u','<u>U</u>','Altı çizili')}${FB('s','<s>S</s>','Üstü çizili')}<span class="fsep"></span>${FB('head','<b>H</b>','Başlık')}${FB('font','<span style="font-family:Georgia,serif;font-size:19px">Aa</span>','Yazı tipi')}${FB('size',ic('text',22),'Boyut')}${FB('color','<span style="border-bottom:4px solid #d32f2f;line-height:1;font-weight:700">A</span>','Yazı rengi')}${FB('hl','<span style="background:#fff176;color:#222;padding:0 4px;border-radius:3px;font-weight:700">A</span>','Vurgu')}${FB('align',ic('alignl',22),'Hizalama')}<span class="fsep"></span>${FB('ul',ic('ul',22),'Madde işaretli liste')}${FB('ol',ic('ol',22),'Numaralı liste')}${FB('clear',ic('fclear',22),'Biçimi temizle')}${FB('all',ic('selall',22),'Tümünü seç')}<span class="fsep"></span>${FB('fminus','A−','Küçült')}${FB('fplus','A+','Büyüt')}</div><div class="fpop" id="fpop"></div>`}
+function fmtHtml(){return `<div class="fmtrow">${FB('fminus','A−','Küçült')}${FB('fplus','A+','Büyüt')}<span class="fsep"></span>${FB('b','<b>B</b>','Kalın')}${FB('i','<i style="font-family:serif">I</i>','İtalik')}${FB('u','<u>U</u>','Altı çizili')}${FB('s','<s>S</s>','Üstü çizili')}<span class="fsep"></span>${FB('head','<b>H</b>','Başlık')}${FB('font','<span style="font-family:Georgia,serif;font-size:19px">Aa</span>','Yazı tipi')}${FB('size',ic('text',22),'Boyut')}${FB('color','<span style="border-bottom:4px solid #d32f2f;line-height:1;font-weight:700">A</span>','Yazı rengi')}${FB('hl','<span style="background:#fff176;color:#222;padding:0 4px;border-radius:3px;font-weight:700">A</span>','Vurgu')}${FB('align',ic('alignl',22),'Hizalama')}<span class="fsep"></span>${FB('ul',ic('ul',22),'Madde işaretli liste')}${FB('ol',ic('ol',22),'Numaralı liste')}${FB('clear',ic('fclear',22),'Biçimi temizle')}${FB('all',ic('selall',22),'Tümünü seç')}</div><div class="fpop" id="fpop"></div>`}
 function openEditor(id,opts){opts=opts||{};let n,isNew=false;
  if(id)n=notes.find(x=>x.id===id);
  else{n={id:uid(),folderId:view.scope==='folder'?view.folderId:null,title:'',body:'',color:0,pinned:false,state:'active',created:Date.now(),updated:Date.now()};if(opts.type==='list'){n.type='list';n.items=[{id:uid(),t:'',done:false}]}isNew=true}
  cur={n,isNew,persisted:!isNew};popK='';pend=false;
  const e=$('#editor');
  e.innerHTML=`<div class="ed-top"><button class="icb" data-e="back">${ic('back')}</button><span class="sp"></span><button class="icb" data-e="bell" title="Hatırlatıcı">${ic('bell')}</button><button class="icb" data-e="pin">${ic('pin')}</button><button class="icb" data-e="folder">${ic('folder')}</button><button class="icb" data-e="archive">${ic('archive')}</button><button class="icb" data-e="more">${ic('more')}</button></div>
- <div id="edScroll"><div class="edimgs" id="edImgs"></div><div class="edaud" id="edAud"></div><input id="edTitle" placeholder="Başlık" autocomplete="off"><div id="edMeta"></div>
+ <div id="edScroll"><div class="edimgs" id="edImgs"></div><div class="edaud" id="edAud"></div><input id="edTitle" placeholder="Başlık" autocomplete="off"><div id="edMeta"><span id="edMetaT"></span><span id="edStat"></span></div>
  <div id="edBody" contenteditable="true" spellcheck="true" role="textbox" aria-multiline="true" data-ph="Not yazın veya metni yapıştırın…"></div>
  <div id="edList"></div></div>
  <div class="ed-find" id="edFind"><input id="edFq" placeholder="Not içinde bul"><button class="icb" data-e="fprev">${ic('up')}</button><button class="icb" data-e="fnext">${ic('down')}</button><button class="icb" data-e="fclose">${ic('close')}</button></div>
  <div class="fmt" id="fmt">${fmtHtml()}</div>
- <div class="ed-bot" id="edBot"><button class="icb" data-e="aa" title="Biçimlendirme" style="font-weight:700;font-size:17px">Aa</button><button class="icb" data-e="color" title="Not rengi">${ic('palette')}</button><button class="icb" data-e="cam" title="Fotoğraf çek">${ic('camera')}</button><button class="icb" data-e="gal" title="Galeriden resim ekle">${ic('image')}</button><button class="icb" data-e="draw" title="Çizim ekle">${ic('brush')}</button><button class="icb" data-e="mic" title="Ses">${ic('mic')}</button><span class="stat" id="edStat" style="font-size:11px"></span></div>`;
+ <div class="ed-bot" id="edBot"><button class="icb" data-e="plus" title="Ekle">${ic('addbox')}</button><button class="icb" data-e="color" title="Not rengi">${ic('palette')}</button><button class="icb" data-e="aa" title="Biçimlendirme" style="font-weight:700;font-size:17px">Aa</button><span class="sp" style="flex:1"></span><button class="icb" data-e="mic" id="edMicStop" title="Dinlemeyi durdur" style="display:none">${ic('stop')}</button><button class="icb" data-e="eundo" id="edUndo" title="Geri al" style="display:none">${ic('undo')}</button><button class="icb" data-e="eredo" id="edRedo" title="Yinele" style="display:none">${ic('redo')}</button></div>`;
  const t=$('#edTitle'),b=EDB();t.value=n.title;
  try{document.execCommand('defaultParagraphSeparator',false,'p')}catch(x){}
  b.innerHTML=n.type==='list'?'<p><br></p>':bodyHtmlOf(n);
@@ -570,13 +571,15 @@ function openEditor(id,opts){opts=opts||{};let n,isNew=false;
  $('#edFq').onkeydown=ev=>{if(ev.key==='Enter')doFind(1)};
  if(opts.then)setTimeout(()=>edThen(opts.then),200)}
 function edThen(k){if(!cur)return;if(k==='cam'){touchNow();const i=$('#camIn');i.value='';i.click()}else if(k==='gal'){touchNow();const i=$('#imgIn');i.value='';i.click()}else if(k==='draw')drawFlow();else if(k==='voice')micMenu();else if(k==='remind')remindSheet()}
-function applyMode(){const n=cur.n,isL=n.type==='list';EDB().style.display=isL?'none':'';$('#edList').style.display=isL?'block':'none';$('#fmt').classList.toggle('on',!isL&&S.fmtBar!==false);const aa=$('#editor [data-e=aa]');if(aa)aa.style.display=isL?'none':'';if(isL)renderList()}
+function updUR(){if(!cur)return;const u=$('#edUndo'),r=$('#edRedo');if(!u)return;const L=cur.n.type==='list';let cu=false,cr=false;try{cu=!L&&document.queryCommandEnabled('undo');cr=!L&&document.queryCommandEnabled('redo')}catch(x){}u.style.display=r.style.display=(cu||cr)?'':'none';u.style.opacity=cu?1:.35;r.style.opacity=cr?1:.35}
+document.addEventListener('selectionchange',()=>{if(cur)updUR()});
+function applyMode(){const n=cur.n,isL=n.type==='list';EDB().style.display=isL?'none':'';$('#edList').style.display=isL?'block':'none';$('#fmt').classList.toggle('on',!isL&&S.fmtBar!==false);const aa=$('#editor [data-e=aa]');if(aa)aa.style.display=isL?'none':'';setTimeout(updUR,0);if(isL)renderList()}
 function updEmpty(){const e=EDB();if(!e)return;e.classList.toggle('empty',e.children.length===1&&e.firstElementChild.textContent===''&&e.firstElementChild.tagName==='P')}
 function styleEd(){const e=$('#editor'),n=cur.n;e.style.background=n.color?NC[n.color]:'var(--bg)';EDB().style.fontSize=S.fs+'px';$('#edList').style.fontSize=S.fs+'px'}
 function pinIcon(){const b=$('#editor [data-e=pin]');if(b)b.style.color=cur.n.pinned?'var(--primary)':''}
 function bellIcon(){const b=$('#editor [data-e=bell]');if(b)b.style.color=cur.n.remind?(isDue(cur.n)?'#e0584f':'var(--primary)'):''}
-function updMeta(){const f=cur.n.folderId&&folderById(cur.n.folderId);$('#edMeta').textContent=(f?f.name:'Klasörsüz')+' · '+fdate(cur.n.updated)+(cur.n.remind?' · '+fmtDT(cur.n.remind):'')}
-function updStat(){if(!cur)return;const n=cur.n,b=n.body||'';$('#edStat').textContent=wc(b).toLocaleString('tr-TR')+' kelime · '+b.length.toLocaleString('tr-TR')+' karakter'}
+function updMeta(){const f=cur.n.folderId&&folderById(cur.n.folderId);$('#edMetaT').textContent=(f?f.name:'Klasörsüz')+' · '+fdate(cur.n.updated)+(cur.n.remind?' · '+fmtDT(cur.n.remind):'')}
+function updStat(){if(!cur)return;const n=cur.n,b=n.body||'';$('#edStat').textContent=' · '+wc(b).toLocaleString('tr-TR')+' kelime · '+b.length.toLocaleString('tr-TR')+' karakter'}
 let saveMsgT;function setSave(m){const s=$('#edStat');if(!s||!cur)return;if(m==='…')return;updStat();s.textContent='✓ Kaydedildi · '+s.textContent;clearTimeout(saveMsgT);saveMsgT=setTimeout(()=>{if($('#edStat')&&cur)updStat()},1800)}
 function ser(){if(!cur)return;const n=cur.n;n.title=$('#edTitle').value;
  if(n.type==='list'){n.body=listText(n)}
@@ -710,6 +713,8 @@ $('#editor').onclick=e=>{const im=e.target.closest('[data-img]');if(im){viewImag
  else if(a==='bell')remindSheet();
  else if(a==='folder')pickFolder('Klasöre taşı',fid=>{n.folderId=fid;touchNow();updMeta();toast('Taşındı')},true);
  else if(a==='archive'){n.state='archive';touchNow();toast('Arşivlendi');history.back()}
+ else if(a==='plus')menu('Ekle',[{ic:'camera',label:'Fotoğraf çek',fn:()=>edThen('cam')},{ic:'image',label:'Galeriden resim ekle',fn:()=>edThen('gal')},{ic:'brush',label:'Çizim',fn:()=>edThen('draw')},{ic:'mic',label:'Ses',fn:()=>edThen('voice')}]);
+ else if(a==='eundo'||a==='eredo'){fmtAct(a==='eundo'?'undo':'redo');updUR()}
  else if(a==='aa'){S.fmtBar=S.fmtBar===false;saveS();$('#fmt').classList.toggle('on',S.fmtBar!==false);if(S.fmtBar===false)closePop()}
  else if(a==='color')sheet(`<h3>Not rengi</h3><div class="cpal">${NC.map((c,i)=>`<button data-c="${i}" style="background:${c}">${(n.color||0)===i?ic('check',20):''}</button>`).join('')}</div>`,s=>s.querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>{n.color=+x.dataset.c;touchNow();styleEd();closeSheet()}));
  else if(a==='more')menu('Not',[
@@ -818,7 +823,7 @@ function dictate(){if(!cur)return;if(cur.n.type==='list'){toast('Konuşarak yazm
  r.onend=()=>{if(dict&&dict.on){try{r.start()}catch(x){stopDict()}}};
  try{r.start();dictUI(true);toast('Dinleniyor… konuşun. Durdurmak için mikrofon düğmesine dokunun.')}catch(x){dict=null;toast('Başlatılamadı')}}
 function stopDict(){if(!dict)return;const d=dict;dict=null;try{d.r.onend=null;d.r.stop()}catch(x){}dictUI(false)}
-function dictUI(on){const b=$('#editor [data-e=mic]');if(b){b.style.background=on?'#e0584f':'';b.style.color=on?'#fff':''}}
+function dictUI(on){const b=$('#editor [data-e=mic]');if(b){b.style.display=on?'':'none';b.style.background=on?'#e0584f':'';b.style.color=on?'#fff':''}}
 
 /* ============ Hatırlatıcılar ============ */
 const RP={'':'Tekrarlama yok',day:'Her gün',week:'Her hafta',month:'Her ay'};
